@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/burke/ttyutils"
 	"github.com/kr/pty"
+	"github.com/rfwroo/ttyutils"
 )
 
 func TestIsTerminal(t *testing.T) {
