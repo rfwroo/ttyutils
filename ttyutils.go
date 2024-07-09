@@ -13,6 +13,8 @@ type Termios syscall.Termios
 type Ttysize struct {
 	Lines   uint16
 	Columns uint16
+	_       uint16
+	_       uint16
 }
 
 func IsTerminal(fd uintptr) bool {
@@ -24,22 +26,22 @@ func IsTerminal(fd uintptr) bool {
 func Winsize(of *os.File) (Ttysize, error) {
 	var dimensions [4]uint16
 
-	err := ioctl(of.Fd(), uintptr(syscall.TIOCGWINSZ), uintptr(unsafe.Pointer(&dimensions)))
+	err := ioctl(of.Fd(), uintptr(syscall.TIOCGWINSZ), dimensions)
 	if err != nil {
 		return Ttysize{}, err
 	}
 
-	return Ttysize{dimensions[0], dimensions[1]}, nil
+	return Ttysize{dimensions[0], dimensions[1], 0, 0}, nil
 }
 
 func MirrorWinsize(from, to *os.File) error {
 	var dimensions [4]uint16
 
-	err := ioctl(from.Fd(), syscall.TIOCGWINSZ, uintptr(unsafe.Pointer(&dimensions)))
+	err := ioctl(from.Fd(), syscall.TIOCGWINSZ, dimensions)
 	if err != nil {
 		return err
 	}
-	err = ioctl(to.Fd(), syscall.TIOCSWINSZ, uintptr(unsafe.Pointer(&dimensions)))
+	err = ioctl(to.Fd(), syscall.TIOCSWINSZ, dimensions)
 	if err != nil {
 		return err
 	}
@@ -84,12 +86,12 @@ func RestoreTerminalState(fd uintptr, termios *Termios) error {
 	return err
 }
 
-func ioctl(fd uintptr, cmd uintptr, ptr uintptr) error {
+func ioctl(fd uintptr, cmd uintptr, dimensions [4]uint16) error {
 	_, _, e := syscall.Syscall(
 		syscall.SYS_IOCTL,
 		fd,
 		cmd,
-		uintptr(unsafe.Pointer(ptr)),
+		uintptr(unsafe.Pointer(&dimensions)),
 	)
 	if e != 0 {
 		return errors.New(fmt.Sprintf("ioctl failed! %s", e))
